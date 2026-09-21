@@ -48,7 +48,8 @@ async def on_message(message):
                 await message.channel.send(reply_text)
                 
             except Exception as e:
-                await message.channel.send(f"Error communicating with local model: {e}")
+                print("ERROR: ",e)
+                await message.channel.send(f"Error communicating with local model")
 
 # Run the Discord bot
 client.run(DISCORD_TOKEN)
