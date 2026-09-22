@@ -1,4 +1,4 @@
-.*
+.env
 koboldcpp.exe
 *pycache*
 input/personas/**/*.txt
