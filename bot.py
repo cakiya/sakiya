@@ -81,8 +81,16 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if client.user in message.mentions:
+    # Check if the message is in a DM -OR- if the bot is mentioned in a server
+    is_dm = isinstance(message.channel, discord.DMChannel)
+    is_mentioned = client.user in message.mentions
+
+    if is_dm or is_mentioned:
+        # Clean the input (removes the @mention if it exists, otherwise just strips whitespace)
         user_input = message.content.replace(f'<@{client.user.id}>', '').strip()
+        
+        async with message.channel.typing():
+            # ... (The rest of your try/except block remains exactly the same)
         
         async with message.channel.typing():
             try:
