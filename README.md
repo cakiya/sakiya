@@ -3,6 +3,10 @@ sakiya discord bot
 
 <img width="564" height="433" alt="image" src="https://github.com/user-attachments/assets/5c21f32a-6b7e-423e-821b-d1adc41fcd38" />
 
+hacked together with ai assistance in 1 day / 5 hrs on 9/21/2026
+
+1 hr for basic functionality and 5 hrs for memory features, rag, etc.
+
 ran on i9 4060 (8gb vram) laptop
 
 3449 lines/messages scraped persona of my chatting in a server
