@@ -156,9 +156,19 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
         model="local-model",
         messages=messages_payload,
         temperature=0.85,
+        # Turn off standard penalties
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
         extra_body={
             "min_p": 0.05,
-            "top_p": 1.0
+            "top_p": 1.0,
+            # Turn off standard Kobold repetition penalty
+            "rep_pen": 1.0,
+            # Activate DRY sampler
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": 1024
         }
     )
     
@@ -230,7 +240,7 @@ async def sakiya(interaction: discord.Interaction, message: str):
         print("ERROR:", e)
         await interaction.followup.send("Error communicating with local model.")
 
-@bot.tree.command(name="sync_memory", description="Absorb recent messages in this channel into memory")
+@bot.tree.command(name="sync_memory", description="Absorb recent messages in this channel into channel memory")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def sync_memory(interaction: discord.Interaction):
@@ -258,7 +268,7 @@ async def sync_memory(interaction: discord.Interaction):
         print("ERROR:", e)
         await interaction.followup.send("❌ Something went wrong reading chat history.", ephemeral=True)
 
-@bot.tree.command(name="clear_memory", description="Wipes current chat history with sakiya")
+@bot.tree.command(name="clear_memory", description="Wipes current user's current channel's chat history with sakiya")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def clear_memory(interaction: discord.Interaction):
