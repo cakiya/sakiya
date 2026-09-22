@@ -27,3 +27,4 @@ chat
 5. invite link (maybe gated with a password or my own user?) command
 6. give the bot more context like inquiring user's username/nickname
 7. ~~grab context of preivous x messages, and save that to memory to chat with some context?~~
+8. story mode: use a differnet prompt for only story writing to write some fun nsfw stories maybe XDDD
