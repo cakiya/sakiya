@@ -211,5 +211,22 @@ async def sync_memory(interaction: discord.Interaction):
         print("ERROR: ", e)
         await interaction.followup.send("❌ Something went wrong reading the chat history.", ephemeral=True)
 
+@bot.tree.command(name="clear_memory", description="Wipes your current conversation history with sakiya")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+async def clear_memory(interaction: discord.Interaction):
+    # Defer ephemerally so the wipe confirmation is only visible to you
+    await interaction.response.defer(ephemeral=True)
+    
+    user_id = interaction.user.id
+    
+    # Check if the user actually has a memory stored
+    if user_id in user_memory and len(user_memory[user_id]) > 0:
+        # Reset their specific memory array to be empty
+        user_memory[user_id] = []
+        await interaction.followup.send("🧠 Memory wiped! I am a blank slate.", ephemeral=True)
+    else:
+        await interaction.followup.send("🧠 We don't have any active history to clear right now.", ephemeral=True)
+
 # Run the Discord bot
 bot.run(DISCORD_TOKEN)

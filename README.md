@@ -13,6 +13,8 @@ dm sakiya
 
 /sync_memory 
 - absorbs the last 25 messages of the chat into memory (max 25 messages memory)
+/clear_memory
+- clears only the bot's memory of you
 
 
 todo:
