@@ -2,6 +2,8 @@ import os
 import asyncio
 import numpy as np
 import discord
+from discord import app_commands
+from discord.ext import commands
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from sentence_transformers import SentenceTransformer
@@ -14,9 +16,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DISCORD_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 LLM_URL = "http://localhost:5001/v1"
 PROMPT_PATH = os.path.join(BASE_DIR, "input/prompt.txt")
-PERSONA_PATH = os.path.join(BASE_DIR, "input/personas/"+os.getenv("PERSONA")+".txt")
+PERSONA_PATH = os.path.join(BASE_DIR, "input/personas/"+os.getenv("PERSONA", "default")+".txt")
 KOBOLD_EXE_PATH = os.path.join(BASE_DIR, "koboldcpp.exe")
-MODEL_PATH = os.path.join(BASE_DIR, "input/models/"+os.getenv("MODEL_NAME")+".gguf")
+MODEL_PATH = os.path.join(BASE_DIR, "input/models/"+os.getenv("MODEL_NAME", "default")+".gguf")
 
 # Start the background server
 server_process = koboldcpp.start_server(KOBOLD_EXE_PATH, MODEL_PATH)
@@ -67,68 +69,65 @@ def get_relevant_context(query: str, top_k: int = 0) -> str: # rag turned off to
 # 3. Connect to local backend using the Async client
 llm_client = AsyncOpenAI(base_url=LLM_URL, api_key="koboldcpp")
 
-# 4. Configure Discord Intents
+# 4. Configure Discord Intents & Switch to commands.Bot
 intents = discord.Intents.default()
 intents.message_content = True 
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-@client.event
+# Core LLM generation logic abstracted to handle both DMs and Slash Commands seamlessly
+async def generate_bot_reply(user_id: int, user_input: str) -> str:
+    # Execute the heavy math in a thread to keep the Discord heartbeat alive
+    context = await asyncio.to_thread(get_relevant_context, user_input, 5)
+    
+    # Build final prompt with context
+    final_prompt = system_prompt
+    if context:
+        final_prompt += f"\n\n[Examples of your past messages to copy the style of]:\n{context}"
+
+    # --- MEMORY MANAGEMENT ---
+    if user_id not in user_memory:
+        user_memory[user_id] = []
+
+    user_memory[user_id].append({"role": "user", "content": user_input})
+
+    if len(user_memory[user_id]) > MAX_MEMORY:
+        user_memory[user_id].pop(0)
+
+    messages_payload = [{"role": "system", "content": final_prompt}] + user_memory[user_id]
+
+    response = await llm_client.chat.completions.create(
+        model="local-model",
+        messages=messages_payload,
+        temperature=0.4  # Lowered to 0.4 to keep personality from shifting randomly
+    )
+    
+    reply_text = response.choices[0].message.content
+    
+    user_memory[user_id].append({"role": "assistant", "content": reply_text})
+    # -------------------------
+    
+    return reply_text
+
+@bot.event
 async def on_ready():
-    print(f"Logged in as {client.user}")
+    print("Syncing slash commands globally...")
+    await bot.tree.sync()
+    print(f"Logged in as {bot.user} | Slash commands synced.")
 
-@client.event
+@bot.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author == bot.user:
         return
 
-    # Check if the message is in a DM -OR- if the bot is mentioned in a server
     is_dm = isinstance(message.channel, discord.DMChannel)
-    is_mentioned = client.user in message.mentions
+    is_mentioned = bot.user in message.mentions
 
     if is_dm or is_mentioned:
-        # Clean the input (removes the @mention if it exists, otherwise just strips whitespace)
-        user_input = message.content.replace(f'<@{client.user.id}>', '').strip()
-        
-        async with message.channel.typing():
-            # ... (The rest of your try/except block remains exactly the same)
+        user_input = message.content.replace(f'<@{bot.user.id}>', '').strip()
         
         async with message.channel.typing():
             try:
-                # Execute the heavy math in a thread to keep the Discord heartbeat alive
-                context = await asyncio.to_thread(get_relevant_context, user_input, 5)
-                
-                # Build final prompt with context
-                final_prompt = system_prompt
-                if context:
-                    final_prompt += f"\n\n[Examples of your past messages to copy the style of]:\n{context}"
-
-                # --- MEMORY MANAGEMENT ---
-                # Initialize memory for this user if it doesn't exist
-                if message.author.id not in user_memory:
-                    user_memory[message.author.id] = []
-
-                # Append the user's new message to their memory
-                user_memory[message.author.id].append({"role": "user", "content": user_input})
-
-                # Keep memory from getting too long
-                if len(user_memory[message.author.id]) > MAX_MEMORY:
-                    user_memory[message.author.id].pop(0)
-
-                # Build the full payload: System Prompt + Chat History
-                messages_payload = [{"role": "system", "content": final_prompt}] + user_memory[message.author.id]
-
-                # Send the prompt to Koboldcpp asynchronously
-                response = await llm_client.chat.completions.create(
-                    model="local-model",
-                    messages=messages_payload,
-                    temperature=0.4  # Lowered to 0.4 to keep personality from shifting randomly
-                )
-                
-                reply_text = response.choices[0].message.content
-                
-                # Append the bot's reply to the memory so it remembers its own answers
-                user_memory[message.author.id].append({"role": "assistant", "content": reply_text})
-                # -------------------------
+                reply_text = await generate_bot_reply(message.author.id, user_input)
                 
                 # Split the message into chunks of 1950 characters and send consecutively
                 chunk_size = 1950
@@ -139,5 +138,33 @@ async def on_message(message):
                 print("ERROR: ", e)
                 await message.channel.send("Error communicating with local model.")
 
+
+# 5. Define the User-Installable Slash Command
+@bot.tree.command(name="sakiya", description="Summon sakiya anywhere as an app")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.describe(message="What do you want to say?")
+async def sakiya(interaction: discord.Interaction, message: str):
+    # Defer immediately so Discord knows the bot is "thinking..." and avoids the 3-second timeout
+    await interaction.response.defer(thinking=True)
+    
+    try:
+        reply_text = await generate_bot_reply(interaction.user.id, message.strip())
+        
+        # Split into chunks to handle the 2000-character limit
+        chunk_size = 1950
+        chunks = [reply_text[i:i + chunk_size] for i in range(0, len(reply_text), chunk_size)]
+        
+        # The first chunk uses followup to resolve the "thinking..." state
+        await interaction.followup.send(chunks[0])
+        
+        # Additional chunks are sent if the message is super long
+        for chunk in chunks[1:]:
+            await interaction.followup.send(chunk)
+            
+    except Exception as e:
+        print("ERROR: ", e)
+        await interaction.followup.send("Error communicating with local model.")
+
 # Run the Discord bot
-client.run(DISCORD_TOKEN)
+bot.run(DISCORD_TOKEN)
