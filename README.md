@@ -27,30 +27,33 @@ to use: run bot.py
 
 ## features:
 
-chat
+### chat
 
 1. @sakiya message/question/whatever
 2. /sakiya message/question/whatever
 3. dm sakiya 
 
-/sync_memory 
+### memory
 
-- absorbs the last 25 messages of the chat into memory (max 25 messages memory)
+- sakiya's memory works with 2 different memories
+1. `channel_memory`
+    - if 2 people are calling it in the same channel it only knows the calls and not the non-call chats that happened between them
+    - basically it only memorizes whenever calls are made to it
+    - use /sync_memory if you want to reference something in chat!
+2. `global_user_memory`
+    - per person
+    - memorizes the last 5 messages from the person that called, no matter the channel
 
-/clear_memory
+### /sync_memory 
 
-- clears only the bot's memory of you
+- absorbs the last 25 messages of the chat into `channel_memory` (max 25 messages stored in memory)
+
+### /clear_memory
+
+- clears only the bot's `channel_memory` of you
 
 note: rag works but currently disabled as it selects randomly to not overwhelm the small local llm model, which makes the personality change randomly each run
 
-memory
-
-- sakiya's memory works with "Two-Tier Hierarchical Memory"
-- basically it only memorizes whenever calls are made to it
-    - if 2 people are calling it in the same room it only knows the calls and not the non-call chats that happened between them
-    - use /sync_memory if you want to reference something in chat!
-- also has a separate personal user context history 
-- and a global per user memory
 
 ## todo:
 1. ~~add a start script that auto loads koboldcpp.exe~~
