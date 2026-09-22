@@ -35,7 +35,7 @@ to use: run bot.py
 
 ### memory
 
-- sakiya's memory works with 2 different memories
+sakiya's memory works with 2 different memories
 1. `channel_memory`
     - if 2 people are calling it in the same channel it only knows the calls and not the non-call chats that happened between them
     - basically it only memorizes whenever calls are made to it
