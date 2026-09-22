@@ -1,6 +1,9 @@
 # sakiya
 sakiya discord bot
 
+<img width="564" height="433" alt="image" src="https://github.com/user-attachments/assets/5c21f32a-6b7e-423e-821b-d1adc41fcd38" />
+
+
 to use: run bot.py
 
 setup env btw
