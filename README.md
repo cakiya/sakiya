@@ -3,13 +3,14 @@ sakiya discord bot
 
 <img width="564" height="433" alt="image" src="https://github.com/user-attachments/assets/5c21f32a-6b7e-423e-821b-d1adc41fcd38" />
 
+## setup
+
+1. put `.gguf` models in `input/models`
+2. put persona text files (eg. `cakiya.txt`) in `input/personas` (short sample included)
+3. put prompt in input/personas and rename as `prompt.txt`
+4. setup `.env` (example `.env_example` included)
 
 to use: run bot.py
-
-setup env btw
-
-<img width="573" height="715" alt="image" src="https://github.com/user-attachments/assets/b6526f86-2121-420e-984e-a7f6d6e9ef4f" />
-
 
 ## features:
 
@@ -26,6 +27,8 @@ chat
 /clear_memory
 
 - clears only the bot's memory of you
+
+note: rag works but currently disabled as it selects randomly to not overwhelm the small local llm model, which makes the personality change randomly each run
 
 ## todo:
 1. ~~add a start script that auto loads koboldcpp.exe~~
