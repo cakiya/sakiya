@@ -5,12 +5,21 @@ import discord
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from sentence_transformers import SentenceTransformer
+import koboldcpp  # Added import for your custom server module
 
 # 1. Configuration
 load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DISCORD_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 LLM_URL = "http://localhost:5001/v1"
-PROMPT_PATH = ".prompt.txt"
+PROMPT_PATH = os.path.join(BASE_DIR, "input/prompt.txt")
+PERSONA_PATH = os.path.join(BASE_DIR, "input/personas/"+os.getenv("PERSONA")+".txt")
+KOBOLD_EXE_PATH = os.path.join(BASE_DIR, "koboldcpp.exe")
+MODEL_PATH = os.path.join(BASE_DIR, "input/models/"+os.getenv("MODEL_NAME")+".gguf")
+
+# Start the background server
+server_process = koboldcpp.start_server(KOBOLD_EXE_PATH, MODEL_PATH)
 
 # Store conversation history: { user_id : [list of message dicts] }
 user_memory = {}
@@ -22,7 +31,7 @@ embedder = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
 
 # Read and embed the chat logs once on startup, and load prompt from prompt.txt
 try:
-    with open(".personas/cakiya.txt", "r", encoding="utf-8") as f:
+    with open(PERSONA_PATH, "r", encoding="utf-8") as f:
         history_lines = [line.strip() for line in f if line.strip()]
     history_embeddings = embedder.encode(history_lines, convert_to_numpy=True)
     print(f"Successfully embedded {len(history_lines)} lines of context.")
@@ -39,7 +48,7 @@ except FileNotFoundError:
     print(f"WARNING: {PROMPT_PATH} not found. Using default system prompt.")
     system_prompt = "You are a helpful and creative AI assistant in a Discord server."
 
-def get_relevant_context(query: str, top_k: int = 5) -> str:
+def get_relevant_context(query: str, top_k: int = 0) -> str: # rag turned off to 0 random entries
     """Synchronous function to perform the math calculation for vector search."""
     if not history_lines:
         return ""
@@ -104,7 +113,7 @@ async def on_message(message):
                 response = await llm_client.chat.completions.create(
                     model="local-model",
                     messages=messages_payload,
-                    temperature=0.8
+                    temperature=0.4  # Lowered to 0.4 to keep personality from shifting randomly
                 )
                 
                 reply_text = response.choices[0].message.content
