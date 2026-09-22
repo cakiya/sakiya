@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from sentence_transformers import SentenceTransformer
 import koboldcpp
+import json
 
 # 1. Configuration
 load_dotenv()
@@ -128,6 +129,12 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
 
     messages_payload = [{"role": "system", "content": meta_system}] + channel_memory[channel_id]
 
+    # 6. Call LLM
+    # --- DEBUG: PRINT FULL LLM INQUIRY ---
+    print("\n=== INCOMING LLM PAYLOAD ===")
+    print(json.dumps(messages_payload, indent=2, ensure_ascii=False))
+    print("============================\n")
+    
     # 6. Call LLM
     response = await llm_client.chat.completions.create(
         model="local-model",
