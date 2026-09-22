@@ -24,9 +24,11 @@ MODEL_PATH = os.path.join(BASE_DIR, "input/models/" + os.getenv("MODEL_NAME", "d
 # Start the background server
 server_process = koboldcpp.start_server(KOBOLD_EXE_PATH, MODEL_PATH)
 
-# Store rolling conversation history by channel: { channel_id : [list of message dicts] }
+# Store rolling conversation history by channel
 channel_memory = {}
-MAX_MEMORY = 25
+global_user_memory = {} # New cross-channel tracker
+MAX_CHANNEL_MEMORY = 25
+MAX_USER_MEMORY = 5 # Keeps the VRAM footprint extremely light
 
 # 2. Local RAG Initialization
 print("Loading embedding model and history...")
@@ -87,11 +89,12 @@ def sanitize_response(text: str) -> str:
 
 async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.User | discord.Member, user_input: str) -> str:
     channel_id = channel.id
+    user_id = author.id
     
-    # RAG lookup (set top_k > 0 if you want to re-enable)
+    # 1. RAG lookup
     context = await asyncio.to_thread(get_relevant_context, user_input, 0)
     
-    # 1. Build human-readable channel/server context
+    # 2. Build human-readable channel/server context
     if isinstance(channel, discord.DMChannel):
         location_desc = f"Direct Messages with @{author.display_name}"
     elif hasattr(channel, "guild") and channel.guild:
@@ -99,24 +102,33 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     else:
         location_desc = "Private Group Chat"
 
-    meta_system = f"{system_prompt}\n\n[Current Chat Location: {location_desc}]"
+    # 3. Inject cross-channel global user memory
+    user_context = ""
+    if user_id in global_user_memory and global_user_memory[user_id]:
+        user_context = f"\n\n[Your recent cross-channel memories with @{author.display_name}]:\n"
+        for mem in global_user_memory[user_id]:
+            user_context += f"- {mem}\n"
+
+    # 4. Assemble the System Prompt
+    meta_system = f"{system_prompt}\n\n[Current Chat Location: {location_desc}]{user_context}"
     if context:
         meta_system += f"\n\n[Examples of your past messages to copy style]:\n{context}"
 
-    # 2. Manage Rolling Channel History
+    # 5. Manage Rolling Channel History
     if channel_id not in channel_memory:
         channel_memory[channel_id] = []
 
-    # Format user message with author display name so the bot distinguishes participants
     formatted_user_msg = f"{author.display_name}: {user_input}"
+    
+    # (Your language mirroring check can go here if you kept it)
+    
     channel_memory[channel_id].append({"role": "user", "content": formatted_user_msg})
-
-    if len(channel_memory[channel_id]) > MAX_MEMORY:
+    if len(channel_memory[channel_id]) > MAX_CHANNEL_MEMORY:
         channel_memory[channel_id].pop(0)
 
     messages_payload = [{"role": "system", "content": meta_system}] + channel_memory[channel_id]
 
-    # 3. Call LLM
+    # 6. Call LLM
     response = await llm_client.chat.completions.create(
         model="local-model",
         messages=messages_payload,
@@ -130,8 +142,18 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     raw_reply = response.choices[0].message.content
     clean_reply = sanitize_response(raw_reply)
 
-    # Save bot's reply back to memory
+    # Save bot's reply back to channel memory
     channel_memory[channel_id].append({"role": "assistant", "content": clean_reply})
+
+    # 7. Update Global User Memory
+    if user_id not in global_user_memory:
+        global_user_memory[user_id] = []
+        
+    # Appends a highly condensed summary string to save tokens
+    global_user_memory[user_id].append(f"They said: '{user_input}' | You replied: '{clean_reply}'")
+    
+    if len(global_user_memory[user_id]) > MAX_USER_MEMORY:
+        global_user_memory[user_id].pop(0)
 
     return clean_reply
 
