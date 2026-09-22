@@ -25,7 +25,7 @@ server_process = koboldcpp.start_server(KOBOLD_EXE_PATH, MODEL_PATH)
 
 # Store conversation history: { user_id : [list of message dicts] }
 user_memory = {}
-MAX_MEMORY = 10 # Only remember the last 10 messages to save VRAM
+MAX_MEMORY = 25 # Only remember the last 50 messages to save VRAM
 
 # 2. Local RAG Initialization
 print("Loading embedding model and history... this may take a moment.")
@@ -165,6 +165,51 @@ async def sakiya(interaction: discord.Interaction, message: str):
     except Exception as e:
         print("ERROR: ", e)
         await interaction.followup.send("Error communicating with local model.")
+
+@bot.tree.command(name="sync_memory", description="Absorb the last 25 messages in this chat into memory")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+async def sync_memory(interaction: discord.Interaction):
+    
+    # 1. Permission Check (Optional: uncomment and add your ID if you want to lock it)
+    # ALLOWED_USER_IDS = [YOUR_DISCORD_USER_ID]
+    # if interaction.user.id not in ALLOWED_USER_IDS:
+    #     await interaction.response.send_message("No permission.", ephemeral=True)
+    #     return
+
+    # Defer ephemerally so only you see the success/fail message
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        # 2. Fetch the last 25 messages
+        # Using list comprehension with an async for-loop is the modern discord.py standard
+        messages = [message async for message in interaction.channel.history(limit=25)]
+        
+        # Messages load from newest to oldest; reverse them so the AI reads chronologically
+        messages.reverse()
+
+        user_id = interaction.user.id
+        user_memory[user_id] = []
+
+        # 3. Parse messages into the AI's memory format
+        for msg in messages:
+            # Skip completely empty messages (e.g., just an image) or slash command text
+            if not msg.content or msg.content.startswith("/"):
+                continue
+                
+            if msg.author.id == bot.user.id:
+                user_memory[user_id].append({"role": "assistant", "content": msg.content})
+            else:
+                # Appending the user's display name helps the AI understand who said what in group chats
+                user_memory[user_id].append({"role": "user", "content": f"{msg.author.display_name}: {msg.content}"})
+
+        await interaction.followup.send(f"✅ Successfully absorbed the last {len(user_memory[user_id])} messages into memory!", ephemeral=True)
+
+    except discord.Forbidden:
+        await interaction.followup.send("❌ I do not have permission to read message history in this channel.", ephemeral=True)
+    except Exception as e:
+        print("ERROR: ", e)
+        await interaction.followup.send("❌ Something went wrong reading the chat history.", ephemeral=True)
 
 # Run the Discord bot
 bot.run(DISCORD_TOKEN)
