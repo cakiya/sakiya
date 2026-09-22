@@ -12,6 +12,10 @@ DISCORD_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 LLM_URL = "http://localhost:5001/v1"
 PROMPT_PATH = ".prompt.txt"
 
+# Store conversation history: { user_id : [list of message dicts] }
+user_memory = {}
+MAX_MEMORY = 10 # Only remember the last 10 messages to save VRAM
+
 # 2. Local RAG Initialization
 print("Loading embedding model and history... this may take a moment.")
 embedder = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
@@ -81,17 +85,34 @@ async def on_message(message):
                 if context:
                     final_prompt += f"\n\n[Examples of your past messages to copy the style of]:\n{context}"
 
+                # --- MEMORY MANAGEMENT ---
+                # Initialize memory for this user if it doesn't exist
+                if message.author.id not in user_memory:
+                    user_memory[message.author.id] = []
+
+                # Append the user's new message to their memory
+                user_memory[message.author.id].append({"role": "user", "content": user_input})
+
+                # Keep memory from getting too long
+                if len(user_memory[message.author.id]) > MAX_MEMORY:
+                    user_memory[message.author.id].pop(0)
+
+                # Build the full payload: System Prompt + Chat History
+                messages_payload = [{"role": "system", "content": final_prompt}] + user_memory[message.author.id]
+
                 # Send the prompt to Koboldcpp asynchronously
                 response = await llm_client.chat.completions.create(
                     model="local-model",
-                    messages=[
-                        {"role": "system", "content": final_prompt},
-                        {"role": "user", "content": user_input}
-                    ],
+                    messages=messages_payload,
                     temperature=0.8
                 )
                 
                 reply_text = response.choices[0].message.content
+                
+                # Append the bot's reply to the memory so it remembers its own answers
+                user_memory[message.author.id].append({"role": "assistant", "content": reply_text})
+                # -------------------------
+                
                 await message.channel.send(reply_text)
                 
             except Exception as e:
