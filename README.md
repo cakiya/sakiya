@@ -3,6 +3,11 @@ sakiya discord bot
 
 to use: run bot.py
 
+setup env btw
+
+<img width="573" height="715" alt="image" src="https://github.com/user-attachments/assets/b6526f86-2121-420e-984e-a7f6d6e9ef4f" />
+
+
 ## features:
 
 chat
