@@ -3,7 +3,7 @@ sakiya discord bot
 
 to use: run bot.py
 
-features:
+## features:
 
 chat
 
@@ -19,7 +19,7 @@ chat
 
 - clears only the bot's memory of you
 
-todo:
+## todo:
 1. ~~add a start script that auto loads koboldcpp.exe ~~
 2. ~~model select~~ set in env
 3. model switcher and command?
