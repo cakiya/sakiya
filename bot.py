@@ -78,6 +78,8 @@ def sanitize_response(text: str) -> str:
         return ""
     # Strip unnecessary quotation marks
     text = text.replace('"', '')
+    # Collapse 3 or more consecutive newlines into a standard double line-break
+    text = re.sub(r'\n{3,}', '\n\n', text)
 
     # Apply period stripping only to short, casual responses
     if len(text) < 160:
