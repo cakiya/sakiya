@@ -20,7 +20,7 @@ chat
 - clears only the bot's memory of you
 
 ## todo:
-1. ~~add a start script that auto loads koboldcpp.exe ~~
+1. ~~add a start script that auto loads koboldcpp.exe~~
 2. ~~model select~~ set in env
 3. model switcher and command?
 4. personalization & mimic modes (and command to switch between them?)
