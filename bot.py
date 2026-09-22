@@ -119,7 +119,21 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     if channel_id not in channel_memory:
         channel_memory[channel_id] = []
 
-    formatted_user_msg = f"{author.display_name}: {user_input}"
+    # --- NAME SANITIZATION ---
+    safe_name = author.display_name
+    
+    # If the user's display name contains Japanese characters, strip the bias
+    if re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', safe_name):
+        # Fall back to their base Discord username (usually English), 
+        # or just default to "User" if their base name is also Japanese
+        safe_name = author.name if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', author.name) else "User"
+
+    formatted_user_msg = f"{safe_name}: {user_input}"
+    
+    # --- DYNAMIC LANGUAGE INJECTION ---
+    if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', user_input):
+        formatted_user_msg += "\n[System override: The user spoke English. Reply in English.]"
+    # ----------------------------------
     
     # (Your language mirroring check can go here if you kept it)
     
