@@ -77,7 +77,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # Core LLM generation logic abstracted to handle both DMs and Slash Commands seamlessly
 async def generate_bot_reply(user_id: int, user_input: str) -> str:
     # Execute the heavy math in a thread to keep the Discord heartbeat alive
-    context = await asyncio.to_thread(get_relevant_context, user_input, 5)
+    context = await asyncio.to_thread(get_relevant_context, user_input, 0) # rag turned off
     
     # Build final prompt with context
     final_prompt = system_prompt
