@@ -1,4 +1,6 @@
 .*
 koboldcpp.exe
-input
 *pycache*
+input/personas/**/*.txt
+input/models/**/*.gguf
+input/prompt.txt
