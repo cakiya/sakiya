@@ -3,9 +3,9 @@ sakiya discord bot
 
 <img width="564" height="433" alt="image" src="https://github.com/user-attachments/assets/5c21f32a-6b7e-423e-821b-d1adc41fcd38" />
 
-hacked together with ai assistance in 1 day / 5 hrs on 9/21/2026
+hacked together with ai assistance in 1 day for basic functionality / 5 hrs for memory features, rag, etc. on 9/21/2026
 
-1 hr for basic functionality and 5 hrs for memory features, rag, etc.
+continuing to work on it whenever i feel like it ^-^
 
 ran on i9 4060 (8gb vram) laptop
 
@@ -21,6 +21,7 @@ RAG turned off to keep personality consistent, my laptop not powerful enough to 
 2. put persona text files (eg. `cakiya.txt`) in `input/personas` (short sample included)
 3. put prompt in input/personas and rename as `prompt.txt`
 4. setup `.env` (example `.env_example` included)
+5. download ``koboldcpp.exe`` and put it in project root folder
 
 to use: run bot.py
 
@@ -41,6 +42,14 @@ chat
 - clears only the bot's memory of you
 
 note: rag works but currently disabled as it selects randomly to not overwhelm the small local llm model, which makes the personality change randomly each run
+
+memory
+
+- sakiya's memory works with "Two-Tier Hierarchical Memory"
+- basically it only memorizes whenever calls are made to it
+    - if 2 people are calling it in the same room it only knows the calls and not the non-call chats that happened between them
+    - use /sync_memory if you want to reference something in chat!
+- also has a separate personal user context history 
 
 ## todo:
 1. ~~add a start script that auto loads koboldcpp.exe~~
