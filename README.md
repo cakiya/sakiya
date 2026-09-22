@@ -7,6 +7,10 @@ ran on i9 4060 (8gb vram) laptop
 
 3449 lines/messages scraped persona of my chatting in a server
 
+RAG turned off to keep personality consistent, my laptop not powerful enough to include enough context that it gets back to consistent...
+
+
+
 ## setup
 
 1. put `.gguf` models in `input/models`
