@@ -98,7 +98,11 @@ async def generate_bot_reply(user_id: int, user_input: str) -> str:
     response = await llm_client.chat.completions.create(
         model="local-model",
         messages=messages_payload,
-        temperature=0.4  # Lowered to 0.4 to keep personality from shifting randomly
+        temperature=0.7, # Raised to allow natural sentence flow
+        extra_body={
+            "min_p": 0.05, # Dynamically cuts off bad hallucinations 
+            "top_p": 1.0   # Disabled so min_p can do the heavy lifting
+        }
     )
     
     reply_text = response.choices[0].message.content
