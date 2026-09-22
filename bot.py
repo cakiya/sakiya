@@ -214,7 +214,7 @@ async def sync_memory(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
 
     try:
-        messages = [m async for m in interaction.channel.history(limit=MAX_MEMORY)]
+        messages = [m async for m in interaction.channel.history(limit=MAX_USER_MEMORY)]
         messages.reverse()
 
         channel_id = interaction.channel.id
