@@ -10,11 +10,14 @@ chat
 1. @sakiya message/question/whatever
 2. /sakiya message/question/whatever
 3. dm sakiya 
-4. /sync_memory 
-    - absorbs the last 25 messages of the chat into memory (max 25 messages memory)
-5. /clear_memory
-    - clears only the bot's memory of you
 
+/sync_memory 
+
+- absorbs the last 25 messages of the chat into memory (max 25 messages memory)
+
+/clear_memory
+
+- clears only the bot's memory of you
 
 todo:
 1. ~~add a start script that auto loads koboldcpp.exe ~~
