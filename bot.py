@@ -113,7 +113,10 @@ async def on_message(message):
                 user_memory[message.author.id].append({"role": "assistant", "content": reply_text})
                 # -------------------------
                 
-                await message.channel.send(reply_text)
+                # Split the message into chunks of 1950 characters and send consecutively
+                chunk_size = 1950
+                for i in range(0, len(reply_text), chunk_size):
+                    await message.channel.send(reply_text[i:i+chunk_size])
                 
             except Exception as e:
                 print("ERROR: ", e)
