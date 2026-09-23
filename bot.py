@@ -33,7 +33,7 @@ MAX_USER_MEMORY = 10 # Keeps the VRAM footprint extremely light
 
 # 2. Local RAG Initialization
 print("Loading embedding model and history...")
-embedder = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
+embedder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", local_files_only=True)
 
 try:
     with open(PERSONA_PATH, "r", encoding="utf-8") as f:
@@ -95,7 +95,7 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     user_id = author.id
     
     # 1. RAG lookup
-    context = await asyncio.to_thread(get_relevant_context, user_input, 50)
+    context = await asyncio.to_thread(get_relevant_context, user_input, 5)
     
     # 2. Build human-readable channel/server context
     if isinstance(channel, discord.DMChannel):
@@ -115,7 +115,7 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     # 4. Assemble the System Prompt
     meta_system = f"{system_prompt}\n\n[Current Chat Location: {location_desc}]{user_context}"
     if context:
-        meta_system += f"\n\n[Examples of your past messages to copy style]:\n{context}"
+        meta_system += f"\n\n[Background Knowledge Retrieved from Memory]:\n{context}"
 
     # 5. Manage Rolling Channel History
     if channel_id not in channel_memory:
@@ -133,8 +133,8 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     formatted_user_msg = f"{safe_name}: {user_input}"
     
     # --- DYNAMIC LANGUAGE INJECTION ---
-    if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', user_input):
-        formatted_user_msg += "\n[System override: The user spoke English. Reply in English.]"
+    # if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', user_input):
+    #     formatted_user_msg += "\n[System override: The user spoke English. Reply in English.]"
     # ----------------------------------
     
     # (Your language mirroring check can go here if you kept it)
