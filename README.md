@@ -11,10 +11,6 @@ ran on i9 4060 (8gb vram) laptop
 
 3449 lines/messages scraped persona of my chatting in a server
 
-RAG turned off to keep personality consistent, my laptop not powerful enough to include enough context that it gets back to consistent...
-
-
-
 ## setup
 
 1. put `.gguf` models in `input/models`
@@ -51,9 +47,6 @@ sakiya's memory works with 2 different memories
 ### /clear_memory
 
 - clears only the bot's `channel_memory` of you
-
-note: rag works but currently disabled as it selects randomly to not overwhelm the small local llm model, which makes the personality change randomly each run
-
 
 ## todo:
 1. ~~add a start script that auto loads koboldcpp.exe~~
