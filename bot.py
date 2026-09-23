@@ -46,8 +46,13 @@ for filepath in glob.glob(os.path.join(PERSONAS_DIR, "*.txt")):
             for line in f:
                 stripped_line = line.strip()
                 if stripped_line:
-                    history_lines.append(stripped_line)
-                    history_sources.append(filename)
+                    # Enforce a maximum chunk size of 80 characters
+                    MAX_CHARS = 80
+                    # Slice massive paragraphs into smaller, digestible pieces
+                    for i in range(0, len(stripped_line), MAX_CHARS):
+                        chunk = stripped_line[i:i+MAX_CHARS]
+                        history_lines.append(chunk)
+                        history_sources.append(filename)
     except Exception as e:
         print(f"Error reading {filepath}: {e}")
 
@@ -137,6 +142,13 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     meta_system = f"{system_prompt}\n\n[Current Chat Location: {location_desc}]{user_context}"
     if context:
         meta_system += f"\n\n[Background Knowledge Retrieved from Memory]:\n{context}"
+
+    # --- DYNAMIC LANGUAGE INJECTION (MOVED TO SYSTEM PROMPT) ---
+    if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', user_input):
+        meta_system += "\n\n[CRITICAL DIRECTIVE: The user spoke English. You MUST reply in English.]"
+    else:
+        meta_system += "\n\n[CRITICAL DIRECTIVE: The user spoke Japanese. You MUST reply in Japanese.]"
+    # -----------------------------------------------------------
 
     # 5. Manage Rolling Channel History
     if channel_id not in channel_memory:
