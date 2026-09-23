@@ -28,8 +28,8 @@ server_process = koboldcpp.start_server(KOBOLD_EXE_PATH, MODEL_PATH)
 # Store rolling conversation history by channel
 channel_memory = {}
 global_user_memory = {} # New cross-channel tracker
-MAX_CHANNEL_MEMORY = 25
-MAX_USER_MEMORY = 5 # Keeps the VRAM footprint extremely light
+MAX_CHANNEL_MEMORY = 100
+MAX_USER_MEMORY = 10 # Keeps the VRAM footprint extremely light
 
 # 2. Local RAG Initialization
 print("Loading embedding model and history...")
@@ -95,7 +95,7 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     user_id = author.id
     
     # 1. RAG lookup
-    context = await asyncio.to_thread(get_relevant_context, user_input, 0)
+    context = await asyncio.to_thread(get_relevant_context, user_input, 50)
     
     # 2. Build human-readable channel/server context
     if isinstance(channel, discord.DMChannel):
