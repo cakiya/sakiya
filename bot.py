@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 import asyncio
 import numpy as np
 import discord
@@ -18,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DISCORD_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 LLM_URL = "http://localhost:5001/v1"
 PROMPT_PATH = os.path.join(BASE_DIR, "input/prompt.txt")
-PERSONA_PATH = os.path.join(BASE_DIR, "input/personas/" + os.getenv("PERSONA", "default") + ".txt")
+PERSONAS_DIR = os.path.join(BASE_DIR, "input/personas")
 KOBOLD_EXE_PATH = os.path.join(BASE_DIR, "koboldcpp.exe")
 MODEL_PATH = os.path.join(BASE_DIR, "input/models/" + os.getenv("MODEL_NAME", "default") + ".gguf")
 
@@ -27,22 +28,34 @@ server_process = koboldcpp.start_server(KOBOLD_EXE_PATH, MODEL_PATH)
 
 # Store rolling conversation history by channel
 channel_memory = {}
-global_user_memory = {} # New cross-channel tracker
+global_user_memory = {}
 MAX_CHANNEL_MEMORY = 100
-MAX_USER_MEMORY = 10 # Keeps the VRAM footprint extremely light
+MAX_USER_MEMORY = 10
 
 # 2. Local RAG Initialization
-print("Loading embedding model and history...")
+print("Loading embedding model and knowledge files...")
 embedder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", local_files_only=True)
 
-try:
-    with open(PERSONA_PATH, "r", encoding="utf-8") as f:
-        history_lines = [line.strip() for line in f if line.strip()]
+history_lines = []
+history_sources = []
+
+for filepath in glob.glob(os.path.join(PERSONAS_DIR, "*.txt")):
+    filename = os.path.basename(filepath)
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            for line in f:
+                stripped_line = line.strip()
+                if stripped_line:
+                    history_lines.append(stripped_line)
+                    history_sources.append(filename)
+    except Exception as e:
+        print(f"Error reading {filepath}: {e}")
+
+if history_lines:
     history_embeddings = embedder.encode(history_lines, convert_to_numpy=True)
-    print(f"Successfully embedded {len(history_lines)} lines of context.")
-except FileNotFoundError:
-    print("WARNING: Persona file not found. Running without RAG context.")
-    history_lines = []
+    print(f"Successfully embedded {len(history_lines)} lines across {len(set(history_sources))} file(s).")
+else:
+    print("WARNING: No text files found in the personas folder. Running without RAG context.")
     history_embeddings = np.array([])
 
 try:
@@ -53,16 +66,27 @@ except FileNotFoundError:
     print(f"WARNING: {PROMPT_PATH} not found. Using default system prompt.")
     system_prompt = "You are sakiya."
 
-def get_relevant_context(query: str, top_k: int = 0) -> str:
+def get_relevant_context(query: str, top_k: int = 5) -> str:
     if not history_lines or top_k == 0:
         return ""
     query_vec = embedder.encode([query], convert_to_numpy=True)
     scores = np.dot(history_embeddings, query_vec.T).squeeze()
+    
+    # Handle single-entry array dimensions
+    if scores.ndim == 0:
+        scores = np.array([scores.item()])
+        
     actual_k = min(top_k, len(scores))
     if actual_k == 0:
         return ""
+        
     top_indices = np.argsort(scores)[::-1][:actual_k]
-    return "\n".join([history_lines[i] for i in top_indices])
+    
+    retrieved_chunks = []
+    for i in top_indices:
+        retrieved_chunks.append(f"[Source: {history_sources[i]}] {history_lines[i]}")
+        
+    return "\n".join(retrieved_chunks)
 
 # 3. Connect to local backend
 llm_client = AsyncOpenAI(base_url=LLM_URL, api_key="koboldcpp")
@@ -76,15 +100,12 @@ def sanitize_response(text: str) -> str:
     """Cleans up periods and stray quotes to match casual style."""
     if not text:
         return ""
-    # Strip unnecessary quotation marks
+    text = re.sub(r'(?i)^sakiya:\s*', '', text)
     text = text.replace('"', '')
-    # Collapse 3 or more consecutive newlines into a standard double line-break
     text = re.sub(r'\n{3,}', '\n\n', text)
 
-    # Apply period stripping only to short, casual responses
     if len(text) < 160:
         text = text.replace("...", "<ELLIPSIS>")
-        # Strip trailing periods, preserve decimals/extensions
         text = re.sub(r'\.(?!\S)', '', text)
         text = text.replace("。", "")
         text = text.replace("<ELLIPSIS>", "...")
@@ -121,23 +142,11 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     if channel_id not in channel_memory:
         channel_memory[channel_id] = []
 
-    # --- NAME SANITIZATION ---
     safe_name = author.display_name
-    
-    # If the user's display name contains Japanese characters, strip the bias
     if re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', safe_name):
-        # Fall back to their base Discord username (usually English), 
-        # or just default to "User" if their base name is also Japanese
         safe_name = author.name if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', author.name) else "User"
 
     formatted_user_msg = f"{safe_name}: {user_input}"
-    
-    # --- DYNAMIC LANGUAGE INJECTION ---
-    # if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', user_input):
-    #     formatted_user_msg += "\n[System override: The user spoke English. Reply in English.]"
-    # ----------------------------------
-    
-    # (Your language mirroring check can go here if you kept it)
     
     channel_memory[channel_id].append({"role": "user", "content": formatted_user_msg})
     if len(channel_memory[channel_id]) > MAX_CHANNEL_MEMORY:
@@ -146,25 +155,20 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     messages_payload = [{"role": "system", "content": meta_system}] + channel_memory[channel_id]
 
     # 6. Call LLM
-    # --- DEBUG: PRINT FULL LLM INQUIRY ---
     print("\n=== INCOMING LLM PAYLOAD ===")
     print(json.dumps(messages_payload, indent=2, ensure_ascii=False))
     print("============================\n")
     
-    # 6. Call LLM
     response = await llm_client.chat.completions.create(
         model="local-model",
         messages=messages_payload,
         temperature=0.85,
-        # Turn off standard penalties
         frequency_penalty=0.0,
         presence_penalty=0.0,
         extra_body={
             "min_p": 0.05,
             "top_p": 1.0,
-            # Turn off standard Kobold repetition penalty
             "rep_pen": 1.0,
-            # Activate DRY sampler
             "dry_multiplier": 0.8,
             "dry_base": 1.75,
             "dry_allowed_length": 2,
@@ -175,14 +179,12 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     raw_reply = response.choices[0].message.content
     clean_reply = sanitize_response(raw_reply)
 
-    # Save bot's reply back to channel memory
     channel_memory[channel_id].append({"role": "assistant", "content": clean_reply})
 
     # 7. Update Global User Memory
     if user_id not in global_user_memory:
         global_user_memory[user_id] = []
         
-    # Appends a highly condensed summary string to save tokens
     global_user_memory[user_id].append(f"They said: '{user_input}' | You replied: '{clean_reply}'")
     
     if len(global_user_memory[user_id]) > MAX_USER_MEMORY:
@@ -268,17 +270,18 @@ async def sync_memory(interaction: discord.Interaction):
         print("ERROR:", e)
         await interaction.followup.send("❌ Something went wrong reading chat history.", ephemeral=True)
 
-@bot.tree.command(name="clear_memory", description="Wipes current user's current channel's chat history with sakiya")
+@bot.tree.command(name="clear_memory", description="Wipes current user's channel and cross-channel memory with sakiya")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def clear_memory(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     channel_id = interaction.channel.id
+    user_id = interaction.user.id
 
-    if channel_id in channel_memory and len(channel_memory[channel_id]) > 0:
-        channel_memory[channel_id] = []
-        await interaction.followup.send("🧠 Channel memory wiped! Clean slate here.", ephemeral=True)
-    else:
-        await interaction.followup.send("🧠 No active memory found for this channel.", ephemeral=True)
+    channel_memory[channel_id] = []
+    if user_id in global_user_memory:
+        global_user_memory[user_id] = []
+
+    await interaction.followup.send("🧠 Channel memory and global user context wiped! Clean slate.", ephemeral=True)
 
 bot.run(DISCORD_TOKEN)

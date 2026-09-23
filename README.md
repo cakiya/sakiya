@@ -46,7 +46,7 @@ sakiya's memory works with 2 different memories
 
 ### /clear_memory
 
-- clears only the bot's `channel_memory` of you
+- clears both bot's `channel_memory` & `global_user_memory` of you
 
 ## todo:
 1. ~~add a start script that auto loads koboldcpp.exe~~
