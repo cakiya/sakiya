@@ -187,6 +187,8 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
             "dry_penalty_last_n": 1024
         }
     )
+    print("=== RETURNING LLM RESPONSE ===")
+    print(response)
     
     raw_reply = response.choices[0].message.content
     clean_reply = sanitize_response(raw_reply)
