@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DISCORD_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 LLM_URL = "http://localhost:5001/v1"
-PROMPT_PATH = os.path.join(BASE_DIR, "input/prompts/" + os.getenv("PROMPT", "default") + ".gguf")
+PROMPT_PATH = os.path.join(BASE_DIR, "input/prompts/" + os.getenv("PROMPT", "default") + ".txt")
 PERSONAS_DIR = os.path.join(BASE_DIR, "input/personas")
 KOBOLD_EXE_PATH = os.path.join(BASE_DIR, "koboldcpp.exe")
 MODEL_PATH = os.path.join(BASE_DIR, "input/models/" + os.getenv("MODEL_NAME", "default") + ".gguf")
