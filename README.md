@@ -15,7 +15,7 @@ ran on i9 4060 (8gb vram) laptop
 
 1. put `.gguf` models in `input/models`
 2. put persona text files (eg. `cakiya.txt`) in `input/personas` (short sample included)
-3. put prompt in input/personas and rename as `prompt.txt`
+3. put prompt in input/prompts
 4. setup `.env` (example `.env_example` included)
 5. download ``koboldcpp.exe`` and put it in project root folder
 
