@@ -58,3 +58,4 @@ sakiya's memory works with 2 different memories
 7. ~~grab context of preivous x messages, and save that to memory to chat with some context?~~
 8. story mode: use a differnet prompt for only story writing
 9. per channel memory instead of per person memory that persists through different channels
+10. i should make a toggle so that sakiya can read from chat as well for context not just only calls to her
