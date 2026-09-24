@@ -174,7 +174,7 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
     response = await llm_client.chat.completions.create(
         model="local-model",
         messages=messages_payload,
-        temperature=0.85,
+        temperature=0.7,
         frequency_penalty=0.0,
         presence_penalty=0.0,
         extra_body={
