@@ -1,7 +1,8 @@
 # sakiya
 sakiya discord bot
 
-<img width="564" height="433" alt="image" src="https://github.com/user-attachments/assets/5c21f32a-6b7e-423e-821b-d1adc41fcd38" />
+<img width="564" height="433" alt="image" src="https://github.com/user-attachments/assets/5c21f32a-6b7e-423e-821b-d1adc41fcd38" /><img width="538" height="772" alt="image" src="https://github.com/user-attachments/assets/177cca16-e2b2-4fc5-925f-acc504a80ebb" />
+
 
 hacked together with ai assistance in 1 day for basic functionality / 5 hrs for memory features, rag, etc. on 9/21/2026
 
