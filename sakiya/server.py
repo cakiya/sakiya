@@ -1,6 +1,5 @@
 import atexit
 import subprocess
-import time
 
 from .settings import settings
 
@@ -21,8 +20,5 @@ def start_server(exe_path: str, model_path: str, port: str | None = None):
 
     # Ensure the background server dies when you stop the Python script
     atexit.register(lambda: process.terminate())
-
-    # Give the server a few seconds to load the model into VRAM
-    time.sleep(5)
 
     return process
