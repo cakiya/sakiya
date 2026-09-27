@@ -32,6 +32,8 @@ global_user_memory = {}
 MAX_CHANNEL_MEMORY = 100
 MAX_USER_MEMORY = 10
 
+llm_lock = asyncio.Lock() # koboldcpp is single threaded/one at a time, need lock to make sure each call to the bot gets a response
+
 # 2. Local RAG Initialization
 print("Loading embedding model and knowledge files...")
 embedder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", local_files_only=True)
@@ -159,41 +161,43 @@ async def generate_bot_reply(channel: discord.abc.Messageable, author: discord.U
         safe_name = author.name if not re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', author.name) else "User"
 
     formatted_user_msg = f"{safe_name}: {user_input}"
-    
-    channel_memory[channel_id].append({"role": "user", "content": formatted_user_msg})
-    if len(channel_memory[channel_id]) > MAX_CHANNEL_MEMORY:
-        channel_memory[channel_id].pop(0)
 
-    messages_payload = [{"role": "system", "content": meta_system}] + channel_memory[channel_id]
+    # makes sure each call gets a response
+    async with llm_lock:
+        channel_memory[channel_id].append({"role": "user", "content": formatted_user_msg})
+        if len(channel_memory[channel_id]) > MAX_CHANNEL_MEMORY:
+            channel_memory[channel_id].pop(0)
 
-    # 6. Call LLM
-    print("\n=== INCOMING LLM PAYLOAD ===")
-    print(json.dumps(messages_payload, indent=2, ensure_ascii=False))
-    print("============================\n")
-    
-    response = await llm_client.chat.completions.create(
-        model="local-model",
-        messages=messages_payload,
-        temperature=0.7, # note: 0.7 with prompt_sakiya works really well
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        extra_body={
-            "min_p": 0.05,
-            "top_p": 1.0,
-            "rep_pen": 1.0,
-            "dry_multiplier": 0.8,
-            "dry_base": 1.75,
-            "dry_allowed_length": 2,
-            "dry_penalty_last_n": 1024
-        }
-    )
-    print("\n\n=== RETURNING LLM RESPONSE ===")
-    print(response)
-    
-    raw_reply = response.choices[0].message.content
-    clean_reply = sanitize_response(raw_reply)
+        messages_payload = [{"role": "system", "content": meta_system}] + channel_memory[channel_id]
 
-    channel_memory[channel_id].append({"role": "assistant", "content": clean_reply})
+        # 6. Call LLM
+        print("\n=== INCOMING LLM PAYLOAD ===")
+        print(json.dumps(messages_payload, indent=2, ensure_ascii=False))
+        print("============================\n")
+        
+        response = await llm_client.chat.completions.create(
+            model="local-model",
+            messages=messages_payload,
+            temperature=0.7, # note: 0.7 with prompt_sakiya works really well
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            extra_body={
+                "min_p": 0.05,
+                "top_p": 1.0,
+                "rep_pen": 1.0,
+                "dry_multiplier": 0.8,
+                "dry_base": 1.75,
+                "dry_allowed_length": 2,
+                "dry_penalty_last_n": 1024
+            }
+        )
+        print("\n\n=== RETURNING LLM RESPONSE ===")
+        print(response)
+        
+        raw_reply = response.choices[0].message.content
+        clean_reply = sanitize_response(raw_reply)
+
+        channel_memory[channel_id].append({"role": "assistant", "content": clean_reply})
 
     # 7. Update Global User Memory
     if user_id not in global_user_memory:
