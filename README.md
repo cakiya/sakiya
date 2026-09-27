@@ -39,11 +39,11 @@ sakiya's memory works with 2 different memories
     - use /sync_memory if you want to reference something in chat!
 2. `global_user_memory`
     - per person
-    - memorizes the last 5 messages from the person that called, no matter the channel
+    - memorizes the last 10 messages from the person that called, no matter the channel
 
 ### /sync_memory 
 
-- absorbs the last 25 messages of the chat into `channel_memory` (max 25 messages stored in memory)
+- absorbs the last 100 messages of the chat into `channel_memory` (max 100 messages stored in memory)
 
 ### /clear_memory
 
