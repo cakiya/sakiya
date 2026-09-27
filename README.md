@@ -22,6 +22,27 @@ ran on i9 4060 (8gb vram) laptop
 
 to use: run bot.py
 
+## project layout
+
+```
+bot.py              entry point - boots the model server, warms the RAG index, runs the bot
+scraper.py          standalone one-off persona scraper (not part of the package)
+sakiya/
+  settings.py       every tunable, read from .env once at import
+  server.py         launches koboldcpp.exe as a background subprocess
+  rag.py            builds the persona embedding index, does the similarity search
+  prompts.py        loads the system prompt, detects language, picks a display name
+  memory.py         channel_memory and global_user_memory stores
+  llm.py            LLM client, the request lock, and prompt assembly
+  client.py         the Discord client, on_ready and on_message
+  commands.py       the /sakiya, /sync_memory and /clear_memory slash commands
+  formatting.py     reply sanitizing and Discord message chunking
+input/              models, personas and prompts (gitignored)
+```
+
+to change how sakiya behaves, edit the defaults in `sakiya/settings.py` - prompts,
+sampling parameters and memory limits all live there.
+
 ## features:
 
 ### chat
