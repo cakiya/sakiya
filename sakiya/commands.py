@@ -26,6 +26,25 @@ async def sakiya(interaction: discord.Interaction, message: str):
         await interaction.followup.send("Error communicating with local model.")
 
 
+@bot.tree.command(name="say", description="Make sakiya repeat a message word for word")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.describe(message="The exact text sakiya should say")
+async def say(interaction: discord.Interaction, message: str):
+    await interaction.response.defer(thinking=True)
+
+    text = message.strip()
+    if not text:
+        await interaction.followup.send("_ _")
+        return
+
+    chunks = split_chunks(text)
+
+    await interaction.followup.send(chunks[0])
+    for chunk in chunks[1:]:
+        await interaction.followup.send(chunk)
+
+
 @bot.tree.command(name="sync_memory", description="Absorb recent messages in this channel into channel memory")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)

@@ -70,6 +70,10 @@ sakiya's memory works with 2 different memories
 
 - clears both bot's `channel_memory` & `global_user_memory` of you
 
+### /say
+
+- make sakiya say something
+
 ## todo:
 1. ~~add a start script that auto loads koboldcpp.exe~~
 2. ~~model select~~ set in env
