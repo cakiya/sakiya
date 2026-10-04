@@ -53,6 +53,7 @@ class Settings:
     min_p: float
     top_p: float
     rep_pen: float
+    banned_strings: tuple[str, ...]
     dry: DrySampling
 
     send_chunk_size: int
@@ -86,7 +87,15 @@ def load_settings() -> Settings:
         presence_penalty=0.0,
         min_p=0.05,
         top_p=1.0,
-        rep_pen=1.0,
+        rep_pen=1.15,
+        banned_strings=(
+            "<" + "br" + ">",
+            "<" + "BR" + ">",
+            "<" + "/br" + ">",
+            "<" + "/BR" + ">",
+            "<" + "br/" + ">",
+            "<" + "br /" + ">"
+        ),
         dry=DrySampling(),
         send_chunk_size=1950,
     )

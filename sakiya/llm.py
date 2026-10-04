@@ -5,7 +5,7 @@ import discord
 from openai import AsyncOpenAI
 
 from . import memory, prompts, rag
-from .formatting import sanitize_response
+from .formatting import sanitize_response, empty_check
 from .settings import settings
 
 llm_client = AsyncOpenAI(base_url=settings.llm_url, api_key="koboldcpp")
@@ -80,6 +80,7 @@ async def generate_bot_reply(
                 "min_p": settings.min_p,
                 "top_p": settings.top_p,
                 "rep_pen": settings.rep_pen,
+                "banned_strings": settings.banned_strings,
                 "dry_multiplier": settings.dry.multiplier,
                 "dry_base": settings.dry.base,
                 "dry_allowed_length": settings.dry.allowed_length,
@@ -91,8 +92,9 @@ async def generate_bot_reply(
 
         raw_reply = response.choices[0].message.content
         clean_reply = sanitize_response(raw_reply)
+        non_empty_reply = empty_check(clean_reply)
 
-        memory.append_channel_message(channel_id, {"role": "assistant", "content": clean_reply})
+        memory.append_channel_message(channel_id, {"role": "assistant", "content": non_empty_reply})
 
     # 6. Update Global User Memory
     memory.append_user_exchange(

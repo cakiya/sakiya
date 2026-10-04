@@ -82,5 +82,5 @@ sakiya's memory works with 2 different memories
 9. per channel memory instead of per person memory that persists through different channels
 10. i should make a toggle so that sakiya can read from chat as well for context not just only calls to her
 11. make emojis and implement sakiya to use emojis?
-12. make sakiya reply with ```_ _``` if replying with nothing
-13. fix sakiya replying with ```<br>```
+12. ~~make sakiya reply with ```_ _``` if replying with nothing~~
+13. ~~fix sakiya replying with ```<br>```~~

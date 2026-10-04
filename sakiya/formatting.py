@@ -22,3 +22,10 @@ def sanitize_response(text: str) -> str:
 def split_chunks(text: str) -> list[str]:
     size = settings.send_chunk_size
     return [text[i:i + size] for i in range(0, len(text), size)]
+
+
+def empty_check(text: str) -> str:
+    """if the string is empty, return "..." to prevent empty (no) replies"""
+    if (str == ""):
+        return "..."
+    return text
