@@ -91,10 +91,9 @@ async def generate_bot_reply(
         print(response)
 
         raw_reply = response.choices[0].message.content
-        clean_reply = sanitize_response(raw_reply)
-        non_empty_reply = empty_check(clean_reply)
+        clean_reply = empty_check(sanitize_response(raw_reply))
 
-        memory.append_channel_message(channel_id, {"role": "assistant", "content": non_empty_reply})
+        memory.append_channel_message(channel_id, {"role": "assistant", "content": clean_reply})
 
     # 6. Update Global User Memory
     memory.append_user_exchange(

@@ -9,7 +9,7 @@ def sanitize_response(text: str) -> str:
         return ""
     text = re.sub(r'(?i)^sakiya:\s*', '', text)
     text = text.replace('"', '')
-    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'\n{3,}', '\n', text)
 
     if len(text) < 160:
         text = text.replace("...", "<ELLIPSIS>")
@@ -26,6 +26,6 @@ def split_chunks(text: str) -> list[str]:
 
 def empty_check(text: str) -> str:
     """if the string is empty, return "_ _" to reply with nothing"""
-    if (str == ""):
+    if text.strip() == "":
         return "_ _"
     return text
