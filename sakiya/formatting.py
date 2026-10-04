@@ -25,7 +25,7 @@ def split_chunks(text: str) -> list[str]:
 
 
 def empty_check(text: str) -> str:
-    """if the string is empty, return "..." to prevent empty (no) replies"""
+    """if the string is empty, return "_ _" to reply with nothing"""
     if (str == ""):
-        return "..."
+        return "_ _"
     return text
