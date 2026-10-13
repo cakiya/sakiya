@@ -94,7 +94,9 @@ def load_settings() -> Settings:
             "<" + "/br" + ">",
             "<" + "/BR" + ">",
             "<" + "br/" + ">",
-            "<" + "br /" + ">"
+            "<" + "br /" + ">",
+            "<" + "p" + ">",
+            "<" + "/p" + ">",
         ),
         dry=DrySampling(),
         send_chunk_size=1950,
