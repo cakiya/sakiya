@@ -76,7 +76,7 @@ def load_settings() -> Settings:
         kobold_port=port,
         llm_model="local-model",
         command_prefix="!",
-        max_channel_memory=100,
+        max_channel_memory=30,
         max_user_memory=10,
         embedding_model="paraphrase-multilingual-MiniLM-L12-v2",
         embedding_local_only=True,

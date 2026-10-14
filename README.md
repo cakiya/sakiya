@@ -64,7 +64,7 @@ sakiya's memory works with 2 different memories
 
 ### /sync_memory 
 
-- absorbs the last 100 messages of the chat into `channel_memory` (max 100 messages stored in memory)
+- absorbs the last 30 messages of the chat into `channel_memory` (max 30 messages stored in memory)
 
 ### /clear_memory
 
